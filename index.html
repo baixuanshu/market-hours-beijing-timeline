@@ -1,0 +1,705 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>全球股市开盘时间表（北京时间）</title>
+  <style>
+    :root {
+      --bg1:#07111f;
+      --bg2:#0b1830;
+      --panel:rgba(10,22,38,.88);
+      --panel-2:rgba(15,28,48,.92);
+      --line:rgba(255,255,255,.08);
+      --line-strong:rgba(255,255,255,.16);
+      --text:#eaf2ff;
+      --muted:#94a9c8;
+      --cyan:#49d7ff;
+      --cyan-soft:rgba(73,215,255,.16);
+      --open1:#32d7ff;
+      --open2:#678bff;
+      --break1:#f7c25c;
+      --break2:#ff9b64;
+      --dark1:#ff6b6b;
+      --dark2:#ff2d55;
+      --shadow:0 12px 28px rgba(0,0,0,.28);
+      --gray:grayscale(0);
+      --dim:1;
+      --header-h:84px;
+      --axis-h:28px;
+      --row-h:30px;
+      --name-w:168px;
+      --mobile-axis-w:54px;
+      --mobile-header-h:46px;
+      --mobile-track-h:min(72vh, 560px);
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;color:var(--text);font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;background:linear-gradient(180deg,var(--bg1),var(--bg2));}
+    body::before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle at top right, rgba(73,215,255,.10), transparent 30%),radial-gradient(circle at bottom left, rgba(98,123,255,.10), transparent 34%);filter:var(--gray);opacity:var(--dim)}
+    body.gray-mode{--gray:grayscale(1);--dim:.78}
+    .page{position:relative;z-index:1;max-width:1460px;margin:0 auto;padding:14px 14px 30px;filter:var(--gray);opacity:var(--dim)}
+    .hero,.desktop-view,.mobile-view{background:var(--panel);border:1px solid var(--line);border-radius:20px;box-shadow:0 16px 36px rgba(0,0,0,.22);backdrop-filter:blur(10px)}
+    .hero{padding:16px 18px}
+    .hero-top{display:flex;gap:12px;justify-content:space-between;align-items:flex-start}
+    .hero h1{margin:0 0 6px;font-size:clamp(24px,2.4vw,34px)}
+    .subtitle{margin:0;color:var(--muted);line-height:1.6;font-size:13px;max-width:760px}
+    .controls{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end}
+    .control-box{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;padding:10px 12px;min-width:210px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+    .control-label{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .segmented{display:flex;gap:6px;flex-wrap:wrap}
+    .segmented button{border:1px solid var(--line-strong);background:rgba(255,255,255,.03);color:var(--text);padding:7px 12px;border-radius:999px;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.2px;transition:all .18s ease}
+    .segmented button:hover{border-color:rgba(255,255,255,.28);transform:translateY(-1px)} .segmented button.active{background:linear-gradient(90deg,var(--open1),var(--open2));color:#05111d;border-color:transparent;box-shadow:0 8px 18px rgba(73,215,255,.18)}
+    .stats{margin-top:12px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .stat{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-height:72px}
+    .stat .k{font-size:12px;color:var(--muted);margin-bottom:5px}
+    .stat .v{font-size:18px;font-weight:800;line-height:1.15;letter-spacing:.2px}
+    .stat .s{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.35}
+    .legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:12px;color:var(--muted);font-size:12px}
+    .legend span{display:inline-flex;align-items:center;gap:7px}
+    .line-demo{width:18px;height:2px;background:var(--cyan);box-shadow:0 0 10px rgba(73,215,255,.5)}
+    .bar{width:22px;height:10px;border-radius:999px;display:inline-block}
+    .bar.open{background:linear-gradient(90deg,var(--open1),var(--open2))}
+    .bar.break{background:linear-gradient(90deg,var(--break1),var(--break2))}
+    .bar.off{background:rgba(255,255,255,.12)}
+    .note{margin-top:12px;padding:12px 14px;border:1px dashed var(--line-strong);border-radius:14px;color:var(--muted);font-size:12px;line-height:1.65;background:rgba(255,255,255,.025)}
+
+    .desktop-view,.mobile-view{margin-top:14px;overflow:hidden}
+    .view-title{padding:13px 16px;border-bottom:1px solid var(--line);font-weight:800;letter-spacing:.3px}
+    .desktop-wrap{padding:12px 12px 14px}
+
+    .desktop-compact{position:relative;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,.018))}
+    .desktop-grid{position:relative}
+    .axis-row,.market-row{display:grid;grid-template-columns:var(--name-w) 1fr;border-bottom:1px solid var(--line)}
+    .axis-row{height:var(--axis-h);background:rgba(6,16,29,.92)}
+    .axis-row .axis-track{background:linear-gradient(180deg, rgba(255,255,255,.015), rgba(255,255,255,.005))}
+    .axis-name,.market-meta{border-right:1px solid var(--line);padding:5px 12px}
+    .axis-name{font-size:10px;color:var(--muted);display:flex;align-items:center;justify-content:center;letter-spacing:.18px;background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.012));box-shadow:inset -1px 0 0 rgba(255,255,255,.03)}
+    .market-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.012));box-shadow:inset -1px 0 0 rgba(255,255,255,.03);transition:background .22s ease, box-shadow .22s ease, opacity .22s ease, filter .22s ease}
+    .market-row{height:var(--row-h);transition:opacity .22s ease, filter .22s ease, transform .22s ease}
+    .market-row.active .market-name{color:#f1fbff;text-shadow:0 0 14px rgba(73,215,255,.26);font-size:13px;font-weight:900;transform:translateX(1px)}
+    .market-row.weekend .market-meta{background:rgba(160,160,160,.08)}
+    .market-row.dimmed{opacity:.72;filter:saturate(.72) brightness(.9) grayscale(.18)}
+    .market-row.dimmed .market-meta{background:linear-gradient(180deg, rgba(235,241,248,.10), rgba(170,182,196,.05));box-shadow:inset -1px 0 0 rgba(255,255,255,.02), inset 0 0 0 1px rgba(255,255,255,.02)}
+    .market-row.dimmed .market-name,.market-row.dimmed .market-info{color:rgba(226,234,244,.72)}
+    .market-row.dimmed .market-name{font-size:11px;font-weight:700;text-shadow:none;transform:none}
+    .market-row.dimmed .market-info{font-size:8px;opacity:.78}
+    .market-row.active{opacity:1;filter:none}
+    .market-row.active .market-meta{background:linear-gradient(180deg, rgba(73,215,255,.28), rgba(73,215,255,.10) 52%, rgba(255,255,255,.03));box-shadow:inset 0 0 0 1px rgba(73,215,255,.28), 0 0 0 1px rgba(73,215,255,.06), inset 3px 0 0 rgba(73,215,255,.95), 0 0 22px rgba(73,215,255,.12)}
+    .market-row.active .market-info{color:rgba(241,249,255,.98);font-size:10px;opacity:1}
+    .market-name{font-size:12px;font-weight:800;line-height:1.05;letter-spacing:.05px;white-space:nowrap;transition:font-size .22s ease, font-weight .22s ease, color .22s ease, text-shadow .22s ease, transform .22s ease}
+    .market-info{font-size:9px;color:var(--muted);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.9;max-width:88px;text-align:right;transition:font-size .22s ease, color .22s ease, opacity .22s ease}
+    .track,.axis-track{position:relative}
+    .market-row.active .track,.market-row.active:nth-child(even) .track{background:linear-gradient(90deg, rgba(73,215,255,.22), rgba(73,215,255,.08));box-shadow:inset 0 0 0 1px rgba(73,215,255,.16), 0 0 22px rgba(73,215,255,.12)}
+    .market-row.dimmed .track{background:rgba(255,255,255,.006)}
+    .track::before,.axis-track::before{content:"";position:absolute;inset:0;background-image:linear-gradient(to right,rgba(255,255,255,.08) 1px,transparent 1px),linear-gradient(to right,rgba(255,255,255,.025) 1px,transparent 1px);background-size:calc(100%/24) 100%,calc(100%/48) 100%;pointer-events:none}
+    .market-row:nth-child(even) .track{background:rgba(255,255,255,.012)}
+    .hour{position:absolute;top:8px;transform:translateX(-50%);font-size:9px;color:var(--muted);opacity:.9}
+    .hour.minor{opacity:.42}
+    .segment{position:absolute;border-radius:6px;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px;letter-spacing:.06px}
+    .segment.open{background:linear-gradient(90deg,rgba(54,209,241,.78),rgba(95,128,244,.78));box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+    .segment.break{background:linear-gradient(90deg,rgba(245,191,86,.84),rgba(252,151,96,.84));color:#1f2630;z-index:4;box-shadow:0 0 0 1px rgba(10,22,38,.20)}
+    .segment.break.is-inactive-break{background:rgba(128,138,154,.34) !important;color:rgba(230,236,244,.72) !important;border-color:rgba(255,255,255,.10) !important;box-shadow:0 0 0 1px rgba(10,22,38,.16)}
+    .segment.open.is-muted-by-break{background:rgba(128,138,154,.24) !important;color:rgba(230,236,244,.62) !important;border-color:rgba(255,255,255,.08) !important;box-shadow:none !important}
+    .segment.dark{background:linear-gradient(90deg,rgba(255,107,107,.88),rgba(255,45,85,.88));color:#fff;border:1px solid rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+    .segment.off{background:rgba(255,255,255,.05);color:rgba(255,255,255,.42)}
+    .market-row.dimmed .segment{opacity:.62;filter:saturate(.45) brightness(.95) grayscale(.28)}
+    .market-row.active .segment{opacity:1}
+    .segment.is-active{outline:1px solid rgba(255,255,255,.62);box-shadow:0 0 0 3px rgba(73,215,255,.12), 0 0 18px rgba(73,215,255,.18), inset 0 0 8px rgba(255,255,255,.08);z-index:3;opacity:1 !important}
+    .desktop-current-line{position:absolute;top:0;bottom:0;width:2px;background:linear-gradient(180deg, rgba(73,215,255,.98), rgba(73,215,255,.7));box-shadow:0 0 14px rgba(73,215,255,.55);z-index:9;pointer-events:none;animation:linePulse 1.8s ease-in-out infinite}
+    .desktop-current-line::before{content:"";display:none}
+    .desktop-time-label{position:absolute;top:6px;z-index:20;font-size:10px;color:var(--cyan);background:rgba(5,13,24,.82);padding:2px 6px;border-radius:999px;border:1px solid rgba(73,215,255,.2);white-space:nowrap;pointer-events:none;animation:linePulse 1.8s ease-in-out infinite}
+    .desktop-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
+    .summary-card{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+    .summary-card .t{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .summary-card .c{font-size:12px;line-height:1.6;color:#dce8fa}
+    .summary-list{margin:0;padding-left:16px}
+
+    .mobile-view{display:none}
+    .mobile-wrap{padding:12px}
+    .mobile-top-note{margin-bottom:10px;color:var(--muted);font-size:12px}
+    .mobile-single{position:relative;border:1px solid var(--line);border-radius:16px;overflow-x:auto;overflow-y:hidden;background:linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,.012));height:calc(var(--mobile-track-h) + var(--mobile-header-h));min-height:0;max-height:none;isolation:isolate;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;overscroll-behavior-y:none;touch-action:auto;padding-bottom:0}
+    .mobile-grid{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(22px,1fr);grid-template-columns:30px;min-height:max-content;min-width:max-content;border-radius:15px;overflow:visible}
+    .mobile-axis-col,.mobile-market-col{position:relative;border-right:1px solid var(--line);min-width:0}
+    .mobile-axis-col{background:rgba(6,16,29,.92)}
+    .mobile-axis-title{position:sticky;top:0;z-index:4;background:rgba(6,16,29,.96);border-bottom:1px solid var(--line);height:var(--mobile-header-h);display:flex;align-items:center;justify-content:center;padding:0;font-size:8px;color:var(--muted);text-align:center;letter-spacing:.08px}
+    .mobile-axis-track{position:absolute;top:var(--mobile-header-h);left:0;right:0;bottom:0}
+    .mobile-axis-track::before{content:"";position:absolute;inset:0;background-image:linear-gradient(to bottom,rgba(255,255,255,.08) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.025) 1px,transparent 1px);background-size:100% calc(100%/24),100% calc(100%/48)}
+    .mobile-hour{position:absolute;left:0;transform:translateY(-50%);width:100%;font-size:9px;color:var(--muted);text-align:center;opacity:.85}
+    .mobile-hour.minor{opacity:.4}
+    .mobile-market-col{min-width:52px;transition:opacity .22s ease, filter .22s ease}
+    .mobile-market-col.dimmed{opacity:.72;filter:saturate(.72) brightness(.9) grayscale(.18)}
+    .mobile-market-col.active{opacity:1;filter:none}
+    .mobile-market-col.active .mobile-market-head{background:linear-gradient(180deg, rgba(73,215,255,.24), rgba(73,215,255,.08) 52%, rgba(255,255,255,.03));box-shadow:inset 0 0 0 1px rgba(73,215,255,.28), inset 0 3px 0 rgba(73,215,255,.9), 0 0 18px rgba(73,215,255,.08)}
+    .mobile-market-col.dimmed .mobile-market-head{background:linear-gradient(180deg, rgba(235,241,248,.10), rgba(170,182,196,.05))}
+    .mobile-market-head{position:sticky;top:0;z-index:4;background:rgba(7,16,29,.96);border-bottom:1px solid var(--line);padding:0;height:var(--mobile-header-h);display:flex;align-items:center;justify-content:center}
+    .mobile-market-name{font-size:7px;font-weight:800;line-height:1;white-space:nowrap;transition:all .22s ease;writing-mode:vertical-rl;text-orientation:upright;letter-spacing:.04px}
+    .mobile-market-info{display:none;font-size:8px;color:var(--muted);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.9;transition:all .22s ease}
+    .mobile-market-col.active .mobile-market-name{font-size:8px;font-weight:900;color:#f1fbff;text-shadow:0 0 12px rgba(73,215,255,.22)}
+    .mobile-market-col.active .mobile-market-info{font-size:9px;color:rgba(241,249,255,.98);opacity:1}
+    .mobile-market-col.dimmed .mobile-market-name,.mobile-market-col.dimmed .mobile-market-info{color:rgba(226,234,244,.72)}
+    .mobile-market-track{position:absolute;top:var(--mobile-header-h);left:0;right:0;bottom:0;transition:background .22s ease;overflow:hidden}
+    .mobile-market-col.active .mobile-market-track{background:linear-gradient(180deg, rgba(73,215,255,.18), rgba(73,215,255,.06) 60%, rgba(255,255,255,.02));box-shadow:inset 0 0 0 1px rgba(73,215,255,.12)}
+    .mobile-market-col.dimmed .mobile-market-track{background:rgba(255,255,255,.01)}
+    .mobile-market-track::before{content:"";position:absolute;inset:0;background-image:linear-gradient(to bottom,rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.02) 1px,transparent 1px);background-size:100% calc(100%/24),100% calc(100%/48)}
+    .mobile-segment{position:absolute;left:2px;right:2px;border-radius:5px;padding:0 1px;font-size:5px;font-weight:700;text-align:center;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;white-space:normal;line-height:1;letter-spacing:0;height:10px}
+    .mobile-segment.break{background:linear-gradient(180deg,rgba(245,191,86,.84),rgba(252,151,96,.84));color:#1f2630;z-index:4;box-shadow:0 0 0 1px rgba(10,22,38,.20)}
+    .mobile-segment.break.is-inactive-break{background:rgba(128,138,154,.34) !important;color:rgba(230,236,244,.72) !important;border-color:rgba(255,255,255,.10) !important;box-shadow:0 0 0 1px rgba(10,22,38,.16)}
+    .mobile-segment.open.is-muted-by-break{background:rgba(128,138,154,.24) !important;color:rgba(230,236,244,.62) !important;border-color:rgba(255,255,255,.08) !important;box-shadow:none !important}
+    .mobile-segment .v{display:inline-block;line-height:1.05}
+    .mobile-segment .t{display:inline-block;line-height:1.05}
+    .mobile-market-col.active .mobile-segment{box-shadow:0 0 10px rgba(73,215,255,.18)}
+    .mobile-market-col.dimmed .mobile-segment{opacity:.62;filter:saturate(.45) brightness(.95) grayscale(.28)}
+    .mobile-market-col.active .mobile-segment{opacity:1;box-shadow:0 0 12px rgba(73,215,255,.22)}
+    .mobile-current-line{position:absolute;left:0;height:3px;background:linear-gradient(90deg, rgba(73,215,255,1), rgba(73,215,255,.7));box-shadow:0 0 16px rgba(73,215,255,.75);z-index:9;pointer-events:none;animation:linePulse 1.8s ease-in-out infinite;overflow:hidden}
+    .mobile-current-line::before{content:"";display:none}
+
+    @keyframes linePulse{
+      0%{opacity:.55;filter:brightness(.9)}
+      50%{opacity:1;filter:brightness(1.25)}
+      100%{opacity:.55;filter:brightness(.9)}
+    }
+
+    @media (max-width:1100px){
+      .stats,.desktop-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+      :root{--name-w:170px;--row-h:40px}
+    }
+    @media (max-width:980px){
+      .desktop-view{display:none}
+      .mobile-view{display:block}
+      .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .hero-top{flex-direction:column}
+      .controls{justify-content:flex-start}
+    }
+    @media (max-width:560px){
+      .page{padding:10px 8px 18px}
+      .hero{padding:12px}
+      .stats{grid-template-columns:1fr}
+      .mobile-columns{grid-template-columns:1fr}
+      .control-box{min-width:auto;width:100%}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div class="hero-top">
+        <div>
+          <h1>全球股市开盘时间表（北京时间）</h1>
+          <p class="subtitle">统一换算到北京时间。电脑端首屏压缩总览，手机端改为纵向时间轴；支持自动 / 强制夏令时 / 强制冬令时切换，当前北京时间指针贯穿整张图。</p>
+        </div>
+        <div class="controls">
+          <div class="control-box">
+            <div class="control-label">季节模式切换</div>
+            <div class="segmented" id="seasonModeSwitch">
+              <button data-mode="auto" class="active">自动</button>
+              <button data-mode="dst">全夏令时</button>
+              <button data-mode="standard">全冬令时</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div class="k">当前北京时间</div><div class="v" id="beijingNow">--</div><div class="s" id="weekdayInfo">--</div></div>
+        <div class="stat"><div class="k">当前模式</div><div class="v" id="marketState">--</div><div class="s" id="seasonHint">--</div></div>
+        <div class="stat"><div class="k">当前高亮市场</div><div class="v" id="activeMarkets">--</div><div class="s">时针走到哪，哪条就亮</div></div>
+      </div>
+
+      <div class="legend">
+        <span><i class="line-demo"></i> 当前北京时间实线</span>
+        <span><i class="bar open"></i> 连续交易时段</span>
+        <span><i class="bar break"></i> 午休 / 间歇</span>
+        <span><i class="bar off"></i> 未开盘 / 已收盘</span>
+      </div>
+
+      <div class="note">说明：1）默认按当前真实时区自动判断；2）你也可以右上角一键强制切成“全夏令时”或“全冬令时”；3）周六整页灰化，但时间线依然继续走；4）FWB 这里按法兰克福常规盘处理，FWB2 按法兰克福延长盘处理。</div>
+    </section>
+
+    <section class="desktop-view">
+      <div class="view-title">电脑端总览（首屏压缩版）</div>
+      <div class="desktop-wrap">
+        <div class="desktop-compact" id="desktopCompact">
+          <div class="desktop-grid" id="desktopGrid"></div>
+          <div class="desktop-current-line" id="desktopCurrentLine"></div>
+          <div class="desktop-time-label" id="desktopTimeLabel">北京时间</div>
+        </div>
+        <div class="desktop-summary">
+          <div class="summary-card"><div class="t">当前已开盘</div><div class="c" id="desktopOpenList">--</div></div>
+          <div class="summary-card"><div class="t">当前午休 / 间歇</div><div class="c" id="desktopBreakList">--</div></div>
+          <div class="summary-card"><div class="t">下一批即将开盘</div><div class="c" id="desktopNextList">--</div></div>
+          <div class="summary-card"><div class="t">查看逻辑</div><div class="c">先看蓝色北京时间细线，再看它切到哪些市场胶囊条；亮起的就是当前交易或午休中的时段。</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mobile-view">
+      <div class="view-title">手机端时间轴（纵向 0:00 ↓ 24:00）</div>
+      <div class="mobile-wrap">
+        <div class="mobile-top-note">手机端表格固定一屏看完整个 0:00→24:00，只允许左右滑动查看市场列；页面本身继续正常上下滚动。</div>
+        <div class="mobile-single" id="mobileSingle">
+          <div class="mobile-grid" id="mobileGrid"></div>
+          <div class="mobile-current-line" id="mobileCurrentLine"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const marketCalendars = {
+      // 说明：这里是各市场“非周末”的额外交易日变量入口。
+      // holidays: 全天休市（北京时间日期）
+      // specialSessions: 特殊时段（如提前收盘/临时交易时段），会覆盖当天默认时段
+      // notes: 备注说明，可用于后续补充官方来源或特殊事件说明
+      aus: { holidays: [], specialSessions: {}, notes: [] },
+      jp: { holidays: [], specialSessions: {}, notes: [] },
+      kr: { holidays: [], specialSessions: {}, notes: [] },
+      tw: { holidays: [], specialSessions: {}, notes: [] },
+      cn: { holidays: [], specialSessions: {}, notes: [] },
+      hk: { holidays: [], specialSessions: {}, notes: [] },
+      vn: { holidays: [], specialSessions: {}, notes: [] },
+      uk: { holidays: [], specialSessions: {}, notes: [] },
+      fwb: { holidays: [], specialSessions: {}, notes: [] },
+      fwb2: { holidays: [], specialSessions: {}, notes: [] },
+      us: { holidays: [], specialSessions: {}, notes: [] },
+      mx: { holidays: [], specialSessions: {}, notes: [] }
+    };
+
+    const markets = [
+      { key:'aus', name:'澳股', zone:'Australia/Sydney', standardLabel:'08:00-14:20', dstLabel:'07:00-13:20', sessions:{ standard:[{start:'08:00',end:'14:20',type:'open',label:'交易'}], dst:[{start:'07:00',end:'13:20',type:'open',label:'交易'}] } },
+      { key:'jp', name:'日股', zone:'Asia/Tokyo', standardLabel:'08:00-10:30 / 11:30-14:00', dstLabel:'08:00-10:30 / 11:30-14:00', sessions:{ standard:[{start:'08:00',end:'10:30',type:'open',label:'上午'},{start:'10:30',end:'11:30',type:'break',label:'午休'},{start:'11:30',end:'14:00',type:'open',label:'下午'}], dst:[{start:'08:00',end:'10:30',type:'open',label:'上午'},{start:'10:30',end:'11:30',type:'break',label:'午休'},{start:'11:30',end:'14:00',type:'open',label:'下午'}] } },
+      { key:'kr', name:'韩股', zone:'Asia/Seoul', standardLabel:'08:00-14:30', dstLabel:'08:00-14:30', sessions:{ standard:[{start:'08:00',end:'14:30',type:'open',label:'交易'}], dst:[{start:'08:00',end:'14:30',type:'open',label:'交易'}] } },
+      { key:'tw', name:'台股', zone:'Asia/Taipei', standardLabel:'09:00-13:30', dstLabel:'09:00-13:30', sessions:{ standard:[{start:'09:00',end:'13:30',type:'open',label:'交易'}], dst:[{start:'09:00',end:'13:30',type:'open',label:'交易'}] } },
+      { key:'cn', name:'A股', zone:'Asia/Shanghai', standardLabel:'09:30-11:30 / 13:00-15:00', dstLabel:'09:30-11:30 / 13:00-15:00', sessions:{ standard:[{start:'09:30',end:'11:30',type:'open',label:'上午'},{start:'11:30',end:'13:00',type:'break',label:'午休'},{start:'13:00',end:'15:00',type:'open',label:'下午'}], dst:[{start:'09:30',end:'11:30',type:'open',label:'上午'},{start:'11:30',end:'13:00',type:'break',label:'午休'},{start:'13:00',end:'15:00',type:'open',label:'下午'}] } },
+      { key:'hk', name:'港股', zone:'Asia/Hong_Kong', standardLabel:'09:30-12:00 / 13:00-16:00 / 16:15-18:30(暗盘)', dstLabel:'09:30-12:00 / 13:00-16:00 / 16:15-18:30(暗盘)', sessions:{ standard:[{start:'09:30',end:'12:00',type:'open',label:'上午'},{start:'12:00',end:'13:00',type:'break',label:'午休'},{start:'13:00',end:'16:00',type:'open',label:'下午'},{start:'16:15',end:'18:30',type:'dark',label:'暗盘'}], dst:[{start:'09:30',end:'12:00',type:'open',label:'上午'},{start:'12:00',end:'13:00',type:'break',label:'午休'},{start:'13:00',end:'16:00',type:'open',label:'下午'},{start:'16:15',end:'18:30',type:'dark',label:'暗盘'}] } },
+      { key:'vn', name:'越股', zone:'Asia/Ho_Chi_Minh', standardLabel:'10:00-11:30 / 13:00-15:45', dstLabel:'10:00-11:30 / 13:00-15:45', sessions:{ standard:[{start:'10:00',end:'11:30',type:'open',label:'上午'},{start:'11:30',end:'13:00',type:'break',label:'午休'},{start:'13:00',end:'15:45',type:'open',label:'下午'}], dst:[{start:'10:00',end:'11:30',type:'open',label:'上午'},{start:'11:30',end:'13:00',type:'break',label:'午休'},{start:'13:00',end:'15:45',type:'open',label:'下午'}] } },
+      { key:'uk', name:'英股', zone:'Europe/London', standardLabel:'16:00-00:30', dstLabel:'15:00-23:30', sessions:{ standard:[{start:'16:00',end:'24:00',type:'open',label:'交易'},{start:'00:00',end:'00:30',type:'open',label:'交易'}], dst:[{start:'15:00',end:'23:30',type:'open',label:'交易'}] } },
+      { key:'fwb', name:'FWB', zone:'Europe/Berlin', standardLabel:'16:00-00:30', dstLabel:'15:00-23:30', sessions:{ standard:[{start:'16:00',end:'24:00',type:'open',label:'常规盘'},{start:'00:00',end:'00:30',type:'open',label:'常规盘'}], dst:[{start:'15:00',end:'23:30',type:'open',label:'常规盘'}] } },
+      { key:'fwb2', name:'FWB2', zone:'Europe/Berlin', standardLabel:'14:30-06:00', dstLabel:'13:30-05:00', sessions:{ standard:[{start:'14:30',end:'24:00',type:'open',label:'延长盘'},{start:'00:00',end:'06:00',type:'open',label:'延长盘'}], dst:[{start:'13:30',end:'24:00',type:'open',label:'延长盘'},{start:'00:00',end:'05:00',type:'open',label:'延长盘'}] } },
+      { key:'us', name:'美股', zone:'America/New_York', standardLabel:'22:30-05:00', dstLabel:'21:30-04:00', sessions:{ standard:[{start:'22:30',end:'24:00',type:'open',label:'常规盘'},{start:'00:00',end:'05:00',type:'open',label:'常规盘'}], dst:[{start:'21:30',end:'24:00',type:'open',label:'常规盘'},{start:'00:00',end:'04:00',type:'open',label:'常规盘'}] } },
+      { key:'ca', name:'加股', zone:'America/Toronto', standardLabel:'22:30-05:00', dstLabel:'21:30-04:00', sessions:{ standard:[{start:'22:30',end:'24:00',type:'open',label:'交易'},{start:'00:00',end:'05:00',type:'open',label:'交易'}], dst:[{start:'21:30',end:'24:00',type:'open',label:'交易'},{start:'00:00',end:'04:00',type:'open',label:'交易'}] } },
+      { key:'mx', name:'墨股', zone:'America/Mexico_City', standardLabel:'22:30-05:00', dstLabel:'21:30-04:00', sessions:{ standard:[{start:'22:30',end:'24:00',type:'open',label:'交易'},{start:'00:00',end:'05:00',type:'open',label:'交易'}], dst:[{start:'21:30',end:'24:00',type:'open',label:'交易'},{start:'00:00',end:'04:00',type:'open',label:'交易'}] } }
+    ];
+
+    const state = { seasonMode: 'auto' };
+    const weekdayMap = ['周日','周一','周二','周三','周四','周五','周六'];
+
+    const desktopGrid = document.getElementById('desktopGrid');
+    const desktopCurrentLine = document.getElementById('desktopCurrentLine');
+    const mobileGrid = document.getElementById('mobileGrid');
+    const mobileCurrentLine = document.getElementById('mobileCurrentLine');
+    function getMobileHeaderOffset(){
+      const raw = getComputedStyle(document.documentElement).getPropertyValue('--mobile-header-h').trim();
+      return parseFloat(raw) || 46;
+    }
+    const MOBILE_HEADER_OFFSET = getMobileHeaderOffset();
+    const MOBILE_BOTTOM_SAFE_PX = 0;
+    function getMobileAxisHeight(){
+      const rootStyle = getComputedStyle(document.documentElement);
+      const raw = rootStyle.getPropertyValue('--mobile-track-h').trim();
+      const fallback = Math.min(window.innerHeight * 0.72, 560);
+      if (!raw) return fallback;
+      const probe = document.createElement('div');
+      probe.style.position = 'absolute';
+      probe.style.visibility = 'hidden';
+      probe.style.height = raw;
+      document.body.appendChild(probe);
+      const h = probe.getBoundingClientRect().height || fallback;
+      probe.remove();
+      return h;
+    }
+    function buildVerticalTimeLabel(text){
+      if (!text) return '';
+      const parts = text.split(':');
+      if (parts.length !== 2) return text.split('').join('<br>');
+      return parts[0].split('').join('<br>') + '<br>：<br>' + parts[1].split('').join('<br>');
+    }
+
+    function parseMinutes(s){const [h,m]=s.split(':').map(Number); return h*60+m;}
+    function minutePercent(m){return (m/1440)*100;}
+    function pad(n){return String(n).padStart(2,'0');}
+    function parseTimeToDate(baseDate, hhmm, dayOffset=0){
+      const [h,m] = hhmm.split(':').map(Number);
+      return new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() + dayOffset, h, m, 0, 0);
+    }
+    function getMarketLocalInfo(market, date){
+      const p = getTimePartsInZone(date, market.zone);
+      const localDate = new Date(`${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}`);
+      const weekday = new Date(`${p.year}-${p.month}-${p.day}T00:00:00`).getDay();
+      return { localDate, weekday, year:+p.year, month:+p.month, day:+p.day, hour:+p.hour, minute:+p.minute, second:+p.second };
+    }
+    function isMarketWeekend(market, date){
+      const { weekday } = getMarketLocalInfo(market, date);
+      return weekday === 0 || weekday === 6;
+    }
+
+    function getTimePartsInZone(date, zone){
+      const f = new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,weekday:'short'});
+      const parts = {};
+      for(const p of f.formatToParts(date)){ if(p.type!=='literal') parts[p.type]=p.value; }
+      return parts;
+    }
+    function getOffsetMinutes(date, zone){
+      const p = getTimePartsInZone(date, zone);
+      const asUTC = Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute,+p.second);
+      return (asUTC - date.getTime())/60000;
+    }
+    function isDST(date, zone){
+      const year = date.getUTCFullYear();
+      const samples = [
+        new Date(Date.UTC(year,0,1,12,0,0)),
+        new Date(Date.UTC(year,3,1,12,0,0)),
+        new Date(Date.UTC(year,6,1,12,0,0)),
+        new Date(Date.UTC(year,9,1,12,0,0))
+      ];
+      const offsets = samples.map(d => getOffsetMinutes(d, zone));
+      const unique = [...new Set(offsets)];
+      if(unique.length <= 1) return false;
+      const standardOffset = unique.reduce((a,b)=> Math.abs(a) <= Math.abs(b) ? a : b);
+      const now = getOffsetMinutes(date, zone);
+      return now !== standardOffset;
+    }
+    function resolvedMode(market, date){
+      if(state.seasonMode === 'dst') return 'dst';
+      if(state.seasonMode === 'standard') return 'standard';
+      if(market.key === 'mx') return isDST(date, 'America/New_York') ? 'dst' : 'standard';
+      return isDST(date, market.zone) ? 'dst' : 'standard';
+    }
+    function shiftLocalDate(localDate, dayOffset){
+      return new Date(localDate.getFullYear(), localDate.getMonth(), localDate.getDate() + dayOffset, 12, 0, 0, 0);
+    }
+    function getSessionDayOffset(session){
+      return parseMinutes(session.start) < 360 ? -1 : 0;
+    }
+    function getSessionMode(market, date, session){
+      if(state.seasonMode === 'dst') return 'dst';
+      if(state.seasonMode === 'standard') return 'standard';
+      const localInfo = getMarketLocalInfo(market, date);
+      const sessionLocalDate = shiftLocalDate(localInfo.localDate, getSessionDayOffset(session));
+      if(market.key === 'mx') return isDST(sessionLocalDate, 'America/New_York') ? 'dst' : 'standard';
+      return isDST(sessionLocalDate, market.zone) ? 'dst' : 'standard';
+    }
+    function formatBeijingDateKey(date){
+      const p = getTimePartsInZone(date, 'Asia/Shanghai');
+      return `${p.year}-${p.month}-${p.day}`;
+    }
+    function getCalendarState(market, date){
+      const calendar = marketCalendars[market.key] || { holidays: [], specialSessions: {}, notes: [] };
+      const dateKey = formatBeijingDateKey(date);
+      if (calendar.holidays && calendar.holidays.includes(dateKey)) {
+        return { closed: true, special: false, reason: 'holiday', dateKey, notes: calendar.notes || [] };
+      }
+      if (calendar.specialSessions && calendar.specialSessions[dateKey]) {
+        return { closed: false, special: true, reason: 'special', dateKey, items: calendar.specialSessions[dateKey], notes: calendar.notes || [] };
+      }
+      return { closed: false, special: false, reason: 'regular', dateKey, notes: calendar.notes || [] };
+    }
+    function getSessions(market, date){
+      const mode = resolvedMode(market, date);
+      const calendarState = getCalendarState(market, date);
+      if (calendarState.closed) return { mode, items: [], calendarState };
+      if (calendarState.special) return { mode, items: calendarState.items, calendarState };
+      return { mode, items: market.sessions[mode], calendarState };
+    }
+    function getBeijingInfo(date){
+      const p = getTimePartsInZone(date, 'Asia/Shanghai');
+      const d = new Date(`${p.year}-${p.month}-${p.day}T00:00:00+08:00`);
+      return { year:+p.year, month:+p.month, day:+p.day, hour:+p.hour, minute:+p.minute, second:+p.second, weekday:weekdayMap[d.getDay()] };
+    }
+    function currentBeijingMinute(date){ const p=getBeijingInfo(date); return p.hour*60 + p.minute + p.second/60; }
+    function beijingWeekShort(date){ return new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Shanghai',weekday:'short'}).format(date); }
+    function isSaturdayBeijing(date){ return beijingWeekShort(date)==='Sat'; }
+    function isWeekendBeijing(date){ const w=beijingWeekShort(date); return w==='Sat' || w==='Sun'; }
+    function getEarliestOpen(market,date){
+      const {items}=getSessions(market,date);
+      const opens=items.filter(i=>i.type==='open').map(i=>parseMinutes(i.start)).sort((a,b)=>a-b);
+      const main=opens.filter(v=>v>=240);
+      return main.length?main[0]:opens[0];
+    }
+    function marketStatus(market,date){
+      const minute = currentBeijingMinute(date);
+      const {mode, items, calendarState}=getSessions(market,date);
+      if (calendarState?.closed) {
+        return {minute, mode, active:false, onBreak:false, seg:null, closedByCalendar:true, specialByCalendar:!!calendarState?.special, calendarState};
+      }
+      if (isMarketWeekend(market, date)) {
+        return {minute, mode, active:false, onBreak:false, seg:null, closedByCalendar:true, specialByCalendar:false, calendarState:{...calendarState, reason:'weekend'}};
+      }
+      let activeSeg=null, breakSeg=null;
+      for(const seg of items){
+        const s=parseMinutes(seg.start), e=parseMinutes(seg.end);
+        if(minute>=s && minute<e){
+          if(seg.type==='open') activeSeg=seg;
+          if(seg.type==='break') breakSeg=seg;
+        }
+      }
+      return {minute, mode, active:!!activeSeg, onBreak:!!breakSeg, seg:activeSeg||breakSeg, closedByCalendar:false, specialByCalendar:!!calendarState?.special, calendarState};
+    }
+    function isMarketActiveNow(market,date){
+      const status = marketStatus(market,date);
+      return status.active || status.onBreak;
+    }
+    function nextOpenInfo(market,date){
+      const minute = currentBeijingMinute(date);
+      const {items, calendarState} = getSessions(market,date);
+      if (calendarState?.closed || !items.length) return {market:market.name, inMinutes:99999, at: 0};
+      const starts = items.filter(i=>i.type==='open').map(i=>parseMinutes(i.start)).sort((a,b)=>a-b);
+      for (let dayOffset = 0; dayOffset <= 7; dayOffset++) {
+        const base = new Date(date.getFullYear(), date.getMonth(), date.getDate() + dayOffset, 0, 0, 0, 0);
+        if (isMarketWeekend(market, base)) continue;
+        for (const start of starts) {
+          const candidateMinute = start + dayOffset * 1440;
+          if (candidateMinute > minute) {
+            return {market:market.name, inMinutes:Math.round(candidateMinute-minute), at: start};
+          }
+        }
+      }
+      return {market:market.name, inMinutes:99999, at: starts[0] ?? 0};
+    }
+    function formatMinuteLabel(total){
+      let m = Math.floor(total % 1440);
+      if(m<0) m += 1440;
+      return `${pad(Math.floor(m/60))}:${pad(m%60)}`;
+    }
+    function modeCn(mode){ return mode==='dst' ? '夏令时' : '冬令时'; }
+    function getSessionSetLabel(market, items){
+      const normalized = (items || []).map(seg => `${seg.start}-${seg.end}-${seg.type}-${seg.label}`).join('|');
+      const standard = (market.sessions.standard || []).map(seg => `${seg.start}-${seg.end}-${seg.type}-${seg.label}`).join('|');
+      const dst = (market.sessions.dst || []).map(seg => `${seg.start}-${seg.end}-${seg.type}-${seg.label}`).join('|');
+      if (normalized === dst) return market.dstLabel;
+      if (normalized === standard) return market.standardLabel;
+      return market.dstLabel === market.standardLabel ? market.dstLabel : `${market.dstLabel} / ${market.standardLabel}`;
+    }
+
+    function buildDesktop(date){
+      const sorted = [...markets].sort((a,b)=>getEarliestOpen(a,date)-getEarliestOpen(b,date));
+      desktopGrid.innerHTML='';
+      const axis = document.createElement('div');
+      axis.className='axis-row';
+      axis.innerHTML='<div class="axis-name">市场 / 北京时间</div><div class="axis-track" id="axisTrack"></div>';
+      desktopGrid.appendChild(axis);
+      const axisTrack = axis.querySelector('#axisTrack');
+      for(let i=0;i<=24;i++){
+        const h=document.createElement('div');
+        h.className=`hour ${i % 2 === 0 ? 'major' : 'minor'}`;
+        h.style.left=`${(i/24)*100}%`;
+        h.textContent=`${pad(i)}:00`;
+        axisTrack.appendChild(h);
+      }
+      sorted.forEach(market=>{
+        const status = marketStatus(market,date);
+        const row=document.createElement('div');
+        const shouldHighlight = !isWeekendBeijing(date) && isMarketActiveNow(market,date);
+        row.className=`market-row ${shouldHighlight?'active':'dimmed'} ${isSaturdayBeijing(date)?'weekend':''}`;
+        const {items}=getSessions(market,date);
+        const leftInfo = status.closedByCalendar ? '休市' : (status.specialByCalendar ? '特殊时段' : getSessionSetLabel(market, items));
+        row.innerHTML=`<div class="market-meta"><div class="market-name">${market.name}</div><div class="market-info">${leftInfo}</div></div><div class="track"></div>`;
+        const track = row.querySelector('.track');
+        const breakActive = !!status.onBreak;
+        items.forEach(seg=>{
+          const s=parseMinutes(seg.start), e=parseMinutes(seg.end);
+          const duration = e - s;
+          const el=document.createElement('div');
+          el.className=`segment ${seg.type}`;
+          el.style.top='7px';
+          el.style.height='14px';
+          el.style.left=`${minutePercent(s)}%`;
+          el.style.width=`${minutePercent(duration)}%`;
+          if (duration <= 45) {
+            el.textContent = `${seg.start}`;
+          } else if (duration <= 90) {
+            el.textContent = `${seg.start}-${seg.end}`;
+          } else {
+            el.textContent = `${seg.label} ${seg.start}-${seg.end}`;
+          }
+          const isCurrentSeg = status.minute>=s && status.minute<e;
+          if(seg.type === 'break') {
+            if(isCurrentSeg) el.classList.add('is-active');
+            else el.classList.add('is-inactive-break');
+          } else {
+            if(isCurrentSeg && !breakActive) el.classList.add('is-active');
+            if(breakActive) el.classList.add('is-muted-by-break');
+          }
+          track.appendChild(el);
+        });
+        desktopGrid.appendChild(row);
+      });
+      desktopCurrentLine.style.left=`calc(var(--name-w) + ${minutePercent(currentBeijingMinute(date))}% * (100% - var(--name-w)) / 100)`;
+    }
+
+    function setDesktopLine(date){
+      const compact = document.getElementById('desktopCompact');
+      const width = compact.clientWidth;
+      const nameW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--name-w'));
+      const usable = width - nameW;
+      const left = nameW + usable * (currentBeijingMinute(date)/1440);
+      desktopCurrentLine.style.left = `${left}px`;
+      const desktopTimeLabel = document.getElementById('desktopTimeLabel');
+      if (desktopTimeLabel) {
+        const labelWidth = 64;
+        const maxLeft = Math.max(8, width - labelWidth - 8);
+        desktopTimeLabel.style.left = `${Math.min(maxLeft, Math.max(8, left + 6))}px`;
+      }
+    }
+
+    function compactMobileLabel(label){
+      if (!label) return '';
+      const map = {
+        '上午': '上<br>午',
+        '下午': '下<br>午',
+        '午休': '午<br>休',
+        '交易': '交<br>易',
+        '常规盘': '常<br>规',
+        '延长盘': '延<br>长'
+      };
+      return map[label] || label.split('').join('<br>');
+    }
+
+    let mobileBuiltKey = '';
+    function buildMobile(date){
+      const single = document.getElementById('mobileSingle');
+      const prevScrollLeft = single ? single.scrollLeft : 0;
+      mobileGrid.innerHTML='';
+      const sorted=[...markets].sort((a,b)=>getEarliestOpen(a,date)-getEarliestOpen(b,date));
+      const axisCol = document.createElement('div');
+      axisCol.className='mobile-axis-col';
+      axisCol.innerHTML='<div class="mobile-axis-title">时间</div><div class="mobile-axis-track" id="mobileAxisTrack"></div>';
+      const axisHeight = getMobileAxisHeight();
+      const axisTotalHeight = MOBILE_HEADER_OFFSET + axisHeight + MOBILE_BOTTOM_SAFE_PX;
+      axisCol.style.height = `${axisTotalHeight}px`;
+      mobileGrid.appendChild(axisCol);
+      const axisTrack = axisCol.querySelector('#mobileAxisTrack');
+      axisTrack.style.height = `${axisHeight}px`;
+      for(let i=0;i<=24;i++){
+        const h=document.createElement('div');
+        h.className=`mobile-hour ${i % 2 === 0 ? 'major' : 'minor'}`;
+        h.style.top=`${(i/24)*100}%`;
+        h.textContent=`${pad(i)}:00`;
+        axisTrack.appendChild(h);
+      }
+      sorted.forEach(market=>{
+        const status = marketStatus(market,date);
+        const col = document.createElement('div');
+        const shouldHighlight = !isWeekendBeijing(date) && isMarketActiveNow(market,date);
+        col.className=`mobile-market-col ${shouldHighlight?'active':'dimmed'} ${isSaturdayBeijing(date)?'weekend':''}`;
+        col.dataset.marketKey = market.key;
+        const {items}=getSessions(market,date);
+        const mobileInfo = status.closedByCalendar ? '休市' : (status.specialByCalendar ? '特殊时段' : getSessionSetLabel(market, items));
+        col.innerHTML=`<div class="mobile-market-head"><div class="mobile-market-name">${market.name}</div><div class="mobile-market-info">${mobileInfo}</div></div><div class="mobile-market-track"></div>`;
+        col.style.height = `${axisTotalHeight}px`;
+        col.style.minWidth = '28px';
+        const track = col.querySelector('.mobile-market-track');
+        const breakActive = !!status.onBreak;
+        items.forEach(seg=>{
+          const s=parseMinutes(seg.start), e=parseMinutes(seg.end);
+          const duration = e - s;
+          const el=document.createElement('div');
+          el.className=`mobile-segment segment ${seg.type}`;
+          el.style.top=`${minutePercent(s)}%`;
+          el.style.height=`${minutePercent(duration)}%`;
+          if (seg.label) {
+            el.innerHTML = `<span class="v">${compactMobileLabel(seg.label)}</span>`;
+          } else {
+            el.innerHTML = `<span class="v">${compactMobileLabel(seg.type === 'break' ? '午休' : '交易')}</span>`;
+          }
+          const isCurrentSeg = status.minute>=s && status.minute<e;
+          if(seg.type === 'break') {
+            if(isCurrentSeg) el.classList.add('is-active');
+            else el.classList.add('is-inactive-break');
+          } else {
+            if(isCurrentSeg && !breakActive) el.classList.add('is-active');
+            if(breakActive) el.classList.add('is-muted-by-break');
+          }
+          track.appendChild(el);
+        });
+        mobileGrid.appendChild(col);
+      });
+      setMobileLine(date);
+      if (single) {
+        single.scrollLeft = prevScrollLeft;
+      }
+    }
+
+    function updateMobileState(date){
+      const cols = mobileGrid.querySelectorAll('.mobile-market-col');
+      cols.forEach(col => {
+        const key = col.dataset.marketKey;
+        const market = markets.find(m => m.key === key);
+        if (!market) return;
+        const shouldHighlight = !isWeekendBeijing(date) && isMarketActiveNow(market,date);
+        col.classList.toggle('active', shouldHighlight);
+        col.classList.toggle('dimmed', !shouldHighlight);
+        const track = col.querySelector('.mobile-market-track');
+        if (track) {
+          track.classList.toggle('active', shouldHighlight);
+        }
+        const segments = col.querySelectorAll('.mobile-segment');
+        segments.forEach(segEl => segEl.classList.toggle('is-active', false));
+      });
+    }
+
+    function setMobileLine(date){
+      const single = document.getElementById('mobileSingle');
+      if (!single) return;
+      const axisTrack = document.getElementById('mobileAxisTrack');
+      const trackHeight = axisTrack ? axisTrack.clientHeight : (getMobileAxisHeight() - MOBILE_HEADER_OFFSET);
+      const top = (currentBeijingMinute(date)/1440) * trackHeight + MOBILE_HEADER_OFFSET;
+      mobileCurrentLine.style.top = `${top}px`;
+      mobileCurrentLine.style.width = `${mobileGrid.scrollWidth}px`;
+      mobileCurrentLine.style.left = '0px';
+    }
+
+    function refreshSummary(date){
+      const info = getBeijingInfo(date);
+      document.getElementById('beijingNow').textContent = `${info.year}-${pad(info.month)}-${pad(info.day)} ${pad(info.hour)}:${pad(info.minute)}:${pad(info.second)}`;
+      document.getElementById('weekdayInfo').textContent = `${info.weekday} · 中国标准时间`;
+      const statuses = markets.map(m => ({ market: m, status: marketStatus(m,date) }));
+      const active = statuses.filter(x => x.status.active).map(x => x.market.name);
+      const breaking = statuses.filter(x => x.status.onBreak).map(x => x.market.name);
+      const closedCount = statuses.filter(x => x.status.closedByCalendar).length;
+      document.getElementById('activeMarkets').textContent = active.length ? active.join('、') : (breaking.length ? `午休中：${breaking.join('、')}` : (closedCount ? `休市中：${closedCount}个市场` : '当前无开盘'));
+
+      const modeText = state.seasonMode==='auto' ? '自动判定' : state.seasonMode==='dst' ? '全夏令时' : '全冬令时';
+      document.getElementById('marketState').textContent = isSaturdayBeijing(date) ? '周六灰化模式' : isWeekendBeijing(date) ? '周末模式' : '工作日模式';
+      document.getElementById('seasonHint').textContent = `季节切换：${modeText}`;
+      document.body.classList.toggle('gray-mode', isSaturdayBeijing(date));
+
+      document.getElementById('desktopOpenList').textContent = active.length ? active.join('、') : '当前无';
+      document.getElementById('desktopBreakList').textContent = breaking.length ? breaking.join('、') : '当前无';
+      const next = markets.map(m=>nextOpenInfo(m,date)).sort((a,b)=>a.inMinutes-b.inMinutes).slice(0,4)
+        .map(x=>`${x.market}（${formatMinuteLabel(x.at)}，约${x.inMinutes}分钟后）`);
+      document.getElementById('desktopNextList').textContent = next.join('；');
+    }
+
+    function bindSeasonSwitch(){
+      document.querySelectorAll('#seasonModeSwitch button').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          state.seasonMode = btn.dataset.mode;
+          document.querySelectorAll('#seasonModeSwitch button').forEach(x=>x.classList.toggle('active', x===btn));
+          render();
+        });
+      });
+    }
+
+    function render(){
+      const now = new Date();
+      refreshSummary(now);
+      buildDesktop(now);
+      const mobileKey = `${formatBeijingDateKey(now)}|${state.seasonMode}`;
+      if (!mobileBuiltKey || mobileBuiltKey !== mobileKey) {
+        buildMobile(now);
+        mobileBuiltKey = mobileKey;
+      } else {
+        updateMobileState(now);
+        setMobileLine(now);
+      }
+      setDesktopLine(now);
+    }
+
+    bindSeasonSwitch();
+    render();
+    setInterval(render,15000);
+    window.addEventListener('resize', ()=>{ const now = new Date(); setDesktopLine(now); setMobileLine(now); });
+  </script>
+</body>
+</html>
+
